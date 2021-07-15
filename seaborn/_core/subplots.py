@@ -47,9 +47,9 @@ class Subplots:
             elif pair_axis not in self.pair_spec:
                 continue
             elif multi_dim[:3] in data:
-                err = f"Cannot facet the {multi_dim} while pairing on {pair_axis}."
+                err = f"Cannot facet the {multi_dim} while pairing on `{pair_axis}``."
             elif wrap_dim[:3] in data and self.facet_spec.get("wrap"):
-                err = f"Cannot wrap the {wrap_dim} while pairing on {pair_axis}."
+                err = f"Cannot wrap the {wrap_dim} while pairing on `{pair_axis}``."
             elif wrap_dim[:3] in data and self.pair_spec.get("wrap"):
                 err = f"Cannot wrap the {multi_dim} while faceting the {wrap_dim}."
             else:
@@ -118,10 +118,12 @@ class Subplots:
 
     def init_figure(self, pyplot: bool):  # TODO figsize param or figure_kws dict?
 
+        figure_kws = {"constrained_layout": True}  # TODO get from configure?
+
         if pyplot:
-            figure = plt.figure()
+            figure = plt.figure(**figure_kws)
         else:
-            figure = mpl.figure.Figure()
+            figure = mpl.figure.Figure(**figure_kws)
         self._figure = figure
 
         axs = figure.subplots(**self.subplot_spec, squeeze=False)
@@ -164,7 +166,7 @@ class Subplots:
                 info["top"] = i % nrows == 0
                 info["bottom"] = ((i + 1) % nrows == 0) or ((i + 1) == self.n_subplots)
 
-            if not self.pair_spec["cartesian"]:
+            if not self.pair_spec.get("cartesian", True):
                 info["top"] = j < ncols
                 info["bottom"] = j >= self.n_subplots - ncols
 
