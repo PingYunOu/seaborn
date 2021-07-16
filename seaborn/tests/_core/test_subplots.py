@@ -1,3 +1,4 @@
+import itertools
 import pytest
 
 from seaborn._core.data import PlotData
@@ -284,3 +285,135 @@ class TestSubplotElements:
             assert e["bottom"] == (dim == "col" or i == len(levels) - 1)
             assert e["left"] == (dim == "row" or i == 0)
             assert e["right"] == (dim == "row" or i == len(levels) - 1)
+
+    @pytest.mark.parametrize("dim", ["col", "row"])
+    def test_single_facet_dim_wrapped(self, long_df, dim):
+
+        key = "b"
+        levels = categorical_order(long_df[key])
+        wrap = len(levels) - 1
+        data = PlotData(long_df, {"x": "x", "y": "y", dim: key})
+        s = Subplots({}, {"wrap": wrap}, {}, data)
+        s.init_figure(False)
+
+        assert len(s) == len(levels)
+
+        for i, e in enumerate(s):
+            assert e[dim] == levels[i]
+            for axis in "xy":
+                assert e[axis] == axis
+
+            sides = {
+                "col": ["top", "bottom", "left", "right"],
+                "row": ["left", "right", "top", "bottom"],
+            }
+            tests = (
+                i < wrap,
+                i >= wrap or i >= len(s) % wrap,
+                i % wrap == 0,
+                i % wrap == wrap - 1 or i + 1 == len(s),
+            )
+
+            for side, expected in zip(sides[dim], tests):
+                assert e[side] == expected
+
+    def test_both_facet_dims(self, long_df):
+
+        x = "f"
+        y = "z"
+        col = "a"
+        row = "b"
+        data = PlotData(long_df, {"x": x, "y": y, "col": col, "row": row})
+        s = Subplots({}, {}, {}, data)
+        s.init_figure(False)
+
+        col_levels = categorical_order(long_df[col])
+        row_levels = categorical_order(long_df[row])
+        n_cols = len(col_levels)
+        n_rows = len(row_levels)
+        assert len(s) == n_cols * n_rows
+        es = list(s)
+
+        for e in es[:n_cols]:
+            assert e["top"]
+        for e in es[::n_cols]:
+            assert e["left"]
+        for e in es[n_cols - 1::n_cols]:
+            assert e["right"]
+        for e in es[-n_cols:]:
+            assert e["bottom"]
+
+        for e, (row_, col_) in zip(es, itertools.product(row_levels, col_levels)):
+            assert e["col"] == col_
+            assert e["row"] == row_
+
+        for e in es:
+            assert e["x"] == "x"
+            assert e["y"] == "y"
+
+    @pytest.mark.parametrize("var", ["x", "y"])
+    def test_single_paired_var(self, long_df, var):
+
+        other_var = {"x": "y", "y": "x"}[var]
+        variables = {other_var: "a"}
+        pair_spec = {var: ["x", "y", "z"]}
+
+        data = PlotData(long_df, variables)
+        s = Subplots({}, {}, pair_spec, data)
+        s.init_figure(False)
+
+        assert len(s) == len(pair_spec[var])
+
+        for i, e in enumerate(s):
+            assert e[var] == f"{var}{i}"
+            assert e[other_var] == other_var
+            assert e["col"] is e["row"] is None
+
+        tests = i == 0, True, True, i == len(s) - 1
+        sides = {
+            "x": ["left", "right", "top", "bottom"],
+            "y": ["top", "bottom", "left", "right"],
+        }
+
+        for side, expected in zip(sides[var], tests):
+            assert e[side] == expected
+
+    @pytest.mark.parametrize("var", ["x", "y"])
+    def test_single_paired_var_wrapped(self, long_df, var):
+
+        ...  # TODO
+
+    def test_both_paired_variables(self, long_df):
+
+        x = ["a", "b"]
+        y = ["x", "y", "z"]
+        data = PlotData(long_df, {})
+        s = Subplots({}, {}, {"x": x, "y": y}, data)
+        s.init_figure(False)
+
+        n_cols = len(x)
+        n_rows = len(y)
+        assert len(s) == n_cols * n_rows
+        es = list(s)
+
+        for e in es[:n_cols]:
+            assert e["top"]
+        for e in es[::n_cols]:
+            assert e["left"]
+        for e in es[n_cols - 1::n_cols]:
+            assert e["right"]
+        for e in es[-n_cols:]:
+            assert e["bottom"]
+
+        for e in es:
+            assert e["col"] is e["row"] is None
+
+        for i in range(len(y)):
+            for j in range(len(x)):
+                e = es[i * len(x) + j]
+                assert e["x"] == f"x{j}"
+                assert e["y"] == f"y{i}"
+
+    def test_one_facet_one_paired(self, long_df):
+
+        ...  # TODO
