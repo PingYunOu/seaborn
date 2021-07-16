@@ -185,8 +185,15 @@ class Subplots:
 
             self._subplot_list.append(info)
 
+        return figure
+
         # TODO moving the parts of existing code that depend on data or Plot, so they
         # need to be implemented in a separate method (or in Plot._setup_figure)
 
     def __iter__(self):
-        pass  # TODO use this for looping over each subplot?
+
+        yield from self._subplot_list
+
+    def __len__(self):
+
+        return len(self._subplot_list)

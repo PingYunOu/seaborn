@@ -136,11 +136,8 @@ class Plot:
         #
         # - Implementing this will require lots of downscale changes in figure setup,
         #   and especially the axis scaling, which will need to be pair specific
-        #
-        # - Do we want to allow lists of vectors to define the pairing? Everywhere
-        #   else we have a variable specification, we accept Hashable | Vector
-        #   - Ideally this SHOULD work without special handling now. But it does not
-        #     because things downstream are not thought out clearly.
+
+        # TODO lists of vectors currently work, but I'm not sure where best to test
 
         # TODO add data kwarg here? (it's everywhere else...)
 
@@ -197,6 +194,7 @@ class Plot:
             if keys:
                 pairspec["structure"][axis] = keys
 
+        # TODO raise here if cartesian is False and len(x) != len(y)?
         pairspec["cartesian"] = cartesian
         pairspec["wrap"] = wrap
 
