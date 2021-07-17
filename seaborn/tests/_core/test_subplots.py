@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 import pytest
 
 from seaborn._core.data import PlotData
@@ -247,6 +248,13 @@ class TestSubplotSpec:
         assert s.subplot_spec["sharex"] is False
         assert s.subplot_spec["sharey"] is False
 
+    def test_forced_unshared_facets(self, long_df):
+
+        data = PlotData(long_df, {"col": "a", "row": "f"})
+        s = Subplots({"sharex": False, "sharey": "row"}, {}, {}, data)
+        assert s.subplot_spec["sharex"] is False
+        assert s.subplot_spec["sharey"] == "row"
+
 
 class TestSubplotElements:
 
@@ -381,7 +389,34 @@ class TestSubplotElements:
     @pytest.mark.parametrize("var", ["x", "y"])
     def test_single_paired_var_wrapped(self, long_df, var):
 
-        ...  # TODO
+        other_var = {"x": "y", "y": "x"}[var]
+        variables = {other_var: "a"}
+        pairings = ["x", "y", "z", "a", "b"]
+        wrap = len(pairings) - 2
+        pair_spec = {var: pairings, "wrap": wrap}
+        data = PlotData(long_df, variables)
+        s = Subplots({}, {}, pair_spec, data)
+        s.init_figure(False)
+
+        assert len(s) == len(pairings)
+
+        for i, e in enumerate(s):
+            assert e[var] == f"{var}{i}"
+            assert e[other_var] == other_var
+            assert e["col"] is e["row"] is None
+
+            tests = (
+                i < wrap,
+                i >= wrap or i >= len(s) % wrap,
+                i % wrap == 0,
+                i % wrap == wrap - 1 or i + 1 == len(s),
+            )
+            sides = {
+                "x": ["top", "bottom", "left", "right"],
+                "y": ["left", "right", "top", "bottom"],
+            }
+            for side, expected in zip(sides[var], tests):
+                assert e[side] == expected
 
     def test_both_paired_variables(self, long_df):
 
@@ -414,6 +449,58 @@ class TestSubplotElements:
                 assert e["x"] == f"x{j}"
                 assert e["y"] == f"y{i}"
 
-    def test_one_facet_one_paired(self, long_df):
+    def test_both_paired_non_cartesian(self, long_df):
 
-        ...  # TODO
+        pair_spec = {"x": ["a", "b", "c"], "y": ["x", "y", "z"], "cartesian": False}
+        data = PlotData(long_df, {})
+        s = Subplots({}, {}, pair_spec, data)
+        s.init_figure(False)
+
+        for i, e in enumerate(s):
+            assert e["x"] == f"x{i}"
+            assert e["y"] == f"y{i}"
+            assert e["col"] is e["row"] is None
+            assert e["left"] == (i == 0)
+            assert e["right"] == (i == (len(s) - 1))
+            assert e["top"]
+            assert e["bottom"]
+
+    @pytest.mark.parametrize("dim,var", [("col", "y"), ("row", "x")])
+    def test_one_facet_one_paired(self, long_df, dim, var):
+
+        other_var = {"x": "y", "y": "x"}[var]
+        other_dim = {"col": "row", "row": "col"}[dim]
+
+        variables = {other_var: "z", dim: "s"}
+        pairings = ["x", "y", "t"]
+        pair_spec = {var: pairings}
+
+        data = PlotData(long_df, variables)
+        s = Subplots({}, {}, pair_spec, data)
+        s.init_figure(False)
+
+        levels = categorical_order(long_df[variables[dim]])
+        n_cols = len(levels) if dim == "col" else len(pairings)
+        n_rows = len(levels) if dim == "row" else len(pairings)
+
+        assert len(s) == len(levels) * len(pairings)
+
+        es = list(s)
+
+        for e in es[:n_cols]:
+            assert e["top"]
+        for e in es[::n_cols]:
+            assert e["left"]
+        for e in es[n_cols - 1::n_cols]:
+            assert e["right"]
+        for e in es[-n_cols:]:
+            assert e["bottom"]
+
+        if dim == "row":
+            es = np.reshape(es, (n_rows, n_cols)).T.ravel()
+
+        for i, e in enumerate(es):
+            assert e[dim] == levels[i % len(pairings)]
+            assert e[other_dim] is None
+            assert e[var] == f"{var}{i // len(levels)}"
+            assert e[other_var] == other_var

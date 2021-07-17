@@ -8,6 +8,8 @@ from seaborn._core.rules import categorical_order
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from collections.abc import Generator
+    from matplotlib.figure import Figure
     from seaborn._core.data import PlotData
 
 
@@ -33,6 +35,7 @@ class Subplots:
 
     def _check_dimension_uniqueness(self, data: PlotData) -> None:
         """Reject specs that pair and facet on (or wrap to) same figure dimension."""
+        err = None
         collisions = {"x": ["columns", "rows"], "y": ["rows", "columns"]}
         for pair_axis, (multi_dim, wrap_dim) in collisions.items():
             if self.facet_spec.get("wrap") and "col" in data and "row" in data:
@@ -52,12 +55,11 @@ class Subplots:
                 err = f"Cannot wrap the {wrap_dim} while pairing on `{pair_axis}``."
             elif wrap_dim[:3] in data and self.pair_spec.get("wrap"):
                 err = f"Cannot wrap the {multi_dim} while faceting the {wrap_dim}."
-            else:
-                continue
 
+        if err is not None:
             raise RuntimeError(err)  # TODO what err class? Define PlotSpecError?
 
-    def _determine_grid_dimensions(self, data: PlotData):
+    def _determine_grid_dimensions(self, data: PlotData) -> None:
 
         self.grid_dimensions = {}
         for dim, axis in zip(["col", "row"], ["x", "y"]):
@@ -116,7 +118,7 @@ class Subplots:
                     val = True
             self.subplot_spec[key] = val
 
-    def init_figure(self, pyplot: bool):  # TODO figsize param or figure_kws dict?
+    def init_figure(self, pyplot: bool) -> Figure:  # TODO figure_kws dict?
 
         figure_kws = {"constrained_layout": True}  # TODO get from configure?
 
@@ -190,10 +192,10 @@ class Subplots:
         # TODO moving the parts of existing code that depend on data or Plot, so they
         # need to be implemented in a separate method (or in Plot._setup_figure)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[dict, None, None]:  # TODO TypedDict?
 
         yield from self._subplot_list
 
-    def __len__(self):
+    def __len__(self) -> int:
 
         return len(self._subplot_list)
