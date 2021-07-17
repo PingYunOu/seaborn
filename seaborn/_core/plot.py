@@ -102,6 +102,9 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
 
+        # TODO do a check here that mark has been initialized,
+        # otherwise errors will be inscrutable
+
         if stat is None and mark.default_stat is not None:
             # TODO We need some way to say "do no stat transformation" that is different
             # from "use the default". That's basically an IdentityStat.
@@ -472,12 +475,16 @@ class Plot:
                 })
 
                 axis_obj = getattr(ax, f"{axis}axis")
-                side = {"x": "bottom", "y": "left"}.get(axis)
-                visibility = sub[side] or not self._pairspec.get("cartesian", True)
-                axis_obj.get_label().set_visible(visibility)
+                visible_side = {"x": "bottom", "y": "left"}.get(axis)
+                visible_labels = (
+                    sub[visible_side]
+                    or axis in self._pairspec and self._pairspec.get("wrap", False)
+                    or not self._pairspec.get("cartesian", True)
+                )
+                axis_obj.get_label().set_visible(visible_labels)
                 # TODO check that this is the right way to set these attributes
-                plt.setp(axis_obj.get_majorticklabels(), visible=visibility)
-                plt.setp(axis_obj.get_minorticklabels(), visible=visibility)
+                plt.setp(axis_obj.get_majorticklabels(), visible=visible_labels)
+                plt.setp(axis_obj.get_minorticklabels(), visible=visible_labels)
 
             # TODO title template should be configurable
             # TODO Also we want right-side titles for row facets in most cases
