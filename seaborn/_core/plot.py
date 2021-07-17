@@ -472,13 +472,12 @@ class Plot:
                 })
 
                 axis_obj = getattr(ax, f"{axis}axis")
-                if self._subplotspec.get("cartesian", True):
-                    label_side = {"x": "bottom", "y": "left"}.get(axis)
-                    visible = sub[label_side]
-                    axis_obj.get_label().set_visible(visible)
-                    # TODO check that this is the right way to set these attributes
-                    plt.setp(axis_obj.get_majorticklabels(), visible=visible)
-                    plt.setp(axis_obj.get_minorticklabels(), visible=visible)
+                side = {"x": "bottom", "y": "left"}.get(axis)
+                visibility = sub[side] or not self._pairspec.get("cartesian", True)
+                axis_obj.get_label().set_visible(visibility)
+                # TODO check that this is the right way to set these attributes
+                plt.setp(axis_obj.get_majorticklabels(), visible=visibility)
+                plt.setp(axis_obj.get_minorticklabels(), visible=visibility)
 
             # TODO title template should be configurable
             # TODO Also we want right-side titles for row facets in most cases
