@@ -118,9 +118,11 @@ class Subplots:
                     val = True
             self.subplot_spec[key] = val
 
-    def init_figure(self, pyplot: bool) -> Figure:  # TODO figure_kws dict?
+    def init_figure(self, pyplot: bool, figure_kws: dict | None = {}) -> Figure:
+        # TODO other methods don't have defaults, maybe don't have one here either
 
-        figure_kws = {"constrained_layout": True}  # TODO get from configure?
+        if figure_kws is None:
+            figure_kws = {}
 
         if pyplot:
             figure = plt.figure(**figure_kws)
@@ -188,9 +190,6 @@ class Subplots:
             self._subplot_list.append(info)
 
         return figure
-
-        # TODO moving the parts of existing code that depend on data or Plot, so they
-        # need to be implemented in a separate method (or in Plot._setup_figure)
 
     def __iter__(self) -> Generator[dict, None, None]:  # TODO TypedDict?
 

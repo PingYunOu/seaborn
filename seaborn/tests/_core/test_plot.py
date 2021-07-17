@@ -359,7 +359,7 @@ class TestPlotting:
         p = Plot()
         p._setup_figure()
         assert isinstance(p._figure, mpl.figure.Figure)
-        for sub in p._subplot_list:
+        for sub in p._subplots:
             assert isinstance(sub["ax"], mpl.axes.Axes)
 
     def test_empty(self):
@@ -375,7 +375,7 @@ class TestPlotting:
         assert m.n_splits == 1
 
         assert m.passed_keys[0] == {}
-        assert m.passed_axes[0] is p._subplot_list[0]["ax"]
+        assert m.passed_axes == [sub["ax"] for sub in p._subplots]
         assert_frame_equal(m.passed_data[0], p._data.frame)
 
     def test_single_split_multi_layer(self, long_df):
@@ -435,7 +435,8 @@ class TestPlotting:
         p = Plot(long_df, x="f", y="z", **{split_var: split_col}).add(m).plot()
 
         split_keys = categorical_order(long_df[split_col])
-        assert m.passed_axes == [p._subplot_list[0]["ax"] for _ in split_keys]
+        sub, *_ = p._subplots
+        assert m.passed_axes == [sub["ax"] for _ in split_keys]
         self.check_splits_single_var(p, m, split_var, split_keys)
 
     def test_two_grouping_variables(self, long_df):
@@ -448,8 +449,9 @@ class TestPlotting:
         p = Plot(long_df, y="z", **variables).add(m).plot()
 
         split_keys = [categorical_order(long_df[col]) for col in split_cols]
+        sub, *_ = p._subplots
         assert m.passed_axes == [
-            p._subplot_list[0]["ax"] for _ in itertools.product(*split_keys)
+            sub["ax"] for _ in itertools.product(*split_keys)
         ]
         self.check_splits_multi_vars(p, m, split_vars, split_keys)
 
@@ -670,7 +672,7 @@ class TestFacetInterface:
 
         other_dim = {"row": "col", "col": "row"}[dim]
 
-        for subplot, level in zip(p._subplot_list, order):
+        for subplot, level in zip(p._subplots, order):
             assert subplot[dim] == level
             assert subplot[other_dim] is None
             assert subplot["ax"].get_title() == f"{key} = {level}"
@@ -722,9 +724,9 @@ class TestFacetInterface:
             order = {dim: categorical_order(df[key]) for dim, key in variables.items()}
 
         levels = itertools.product(*[order[dim] for dim in ["row", "col"]])
-        assert len(p._subplot_list) == len(list(levels))
+        assert len(p._subplots) == len(list(levels))
 
-        for subplot, (row_level, col_level) in zip(p._subplot_list, levels):
+        for subplot, (row_level, col_level) in zip(p._subplots, levels):
             assert subplot["row"] == row_level
             assert subplot["col"] == col_level
             assert subplot["axes"].get_title() == (
@@ -838,7 +840,7 @@ class TestPairInterface:
 
         xys = itertools.product(y, x)
 
-        for (y_i, x_j), subplot in zip(xys, p._subplot_list):
+        for (y_i, x_j), subplot in zip(xys, p._subplots):
 
             ax = subplot["ax"]
             assert ax.get_xlabel() == "" if x_j is None else x_j
@@ -880,7 +882,7 @@ class TestPairInterface:
 
         p = Plot(long_df).pair(x, y, cartesian=False).plot()
 
-        for i, subplot in enumerate(p._subplot_list):
+        for i, subplot in enumerate(p._subplots):
             ax = subplot["ax"]
             assert ax.get_xlabel() == x[i]
             assert ax.get_ylabel() == y[i]
@@ -922,7 +924,7 @@ class TestPairInterface:
         facet_levels = categorical_order(long_df[col])
         dims = itertools.product(y, facet_levels)
 
-        for (y_i, col_i), subplot in zip(dims, p._subplot_list):
+        for (y_i, col_i), subplot in zip(dims, p._subplots):
 
             ax = subplot["ax"]
             assert ax.get_xlabel() == x
@@ -938,7 +940,7 @@ class TestPairInterface:
 
         facet_dim, pair_axis = variables
         p = Plot(long_df, **{facet_dim[:3]: "a"}).pair(**{pair_axis: ["x", "y"]})
-        expected = f"Cannot facet on the {facet_dim} while pairing on {pair_axis}."
+        expected = f"Cannot facet the {facet_dim} while pairing on `{pair_axis}`."
         with pytest.raises(RuntimeError, match=expected):
             p.plot()
 
@@ -951,7 +953,7 @@ class TestPairInterface:
             .facet(wrap=2)
             .pair(**{pair_axis: ["x", "y"]})
         )
-        expected = f"Cannot wrap the {facet_dim} while pairing on {pair_axis}."
+        expected = f"Cannot wrap the {facet_dim} while pairing on `{pair_axis}``."
         with pytest.raises(RuntimeError, match=expected):
             p.plot()
 
