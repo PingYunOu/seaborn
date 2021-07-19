@@ -471,24 +471,34 @@ class Plot:
                     # (or pass scales into Subplots)
                     f"{axis}scale": self._scales[axis_key]._scale,
                     # TODO we still need a way to label axes with names passed in layers
+                    # Also, should we make it possible to use only one x/y label for
+                    # all rows/columns in a faceted plot?
                     f"{axis}label": setup_data.names.get(axis_key)
                 })
 
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
-                visible_labels = (
+                show_axis_label = (
                     sub[visible_side]
-                    or axis in self._pairspec and self._pairspec.get("wrap", False)
+                    or axis in self._pairspec and bool(self._pairspec.get("wrap"))
                     or not self._pairspec.get("cartesian", True)
                 )
-                axis_obj.get_label().set_visible(visible_labels)
+                axis_obj.get_label().set_visible(show_axis_label)
                 # TODO check that this is the right way to set these attributes
-                plt.setp(axis_obj.get_majorticklabels(), visible=visible_labels)
-                plt.setp(axis_obj.get_minorticklabels(), visible=visible_labels)
+                show_tick_labels = (
+                    show_axis_label
+                    or self._subplotspec.get(f"share{axis}") not in (
+                        True, "all", {"x": "col", "y": "row"}[axis]
+                    )
+                )
+                plt.setp(axis_obj.get_majorticklabels(), visible=show_tick_labels)
+                plt.setp(axis_obj.get_minorticklabels(), visible=show_tick_labels)
 
             # TODO title template should be configurable
             # TODO Also we want right-side titles for row facets in most cases
             # TODO should configure() accept a title= kwarg (for single subplot plots)?
+            # Let's have what we currently call "margin titles" but properly using the
+            # ax.set_title interface (see my gist)
             title_parts = []
             for dim in ["row", "col"]:
                 if sub[dim] is not None:
