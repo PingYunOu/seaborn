@@ -1042,9 +1042,81 @@ class TestPairInterface:
         assert gridspec.nrows == 2
         assert gridspec.ncols == 3
 
-        # TODO test axis labels and visibility
 
-    # TODO test validation of wrap kwarg vs 2D pairing and faceting
+class TestLabelVisibility:
+
+    def test_single_subplot(self, long_df):
+
+        x, y = "a", "z"
+        p = Plot(long_df, x=x, y=y).plot()
+        subplot, *_ = p._subplots
+        ax = subplot["ax"]
+        assert ax.xaxis.get_label().get_visible()
+        assert ax.yaxis.get_label().get_visible()
+        assert all(t.get_visible() for t in ax.get_xticklabels())
+        assert all(t.get_visible() for t in ax.get_yticklabels())
+
+    @pytest.mark.parametrize(
+        "facet_kws,pair_kws", [({"col": "b"}, {}), ({}, {"x": ["x", "y", "f"]})]
+    )
+    def test_1d_column(self, long_df, facet_kws, pair_kws):
+
+        x = None if "x" in pair_kws else "a"
+        y = "z"
+        p = Plot(long_df, x=x, y=y).plot()
+        first, *other = p._subplots
+
+        ax = first["ax"]
+        assert ax.xaxis.get_label().get_visible()
+        assert ax.yaxis.get_label().get_visible()
+        assert all(t.get_visible() for t in ax.get_xticklabels())
+        assert all(t.get_visible() for t in ax.get_yticklabels())
+
+        for s in other:
+            ax = s["ax"]
+            assert ax.xaxis.get_label().get_visible()
+            assert not ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+            assert not any(t.get_visible() for t in ax.get_yticklabels())
+
+    @pytest.mark.parametrize(
+        "facet_kws,pair_kws", [({"row": "b"}, {}), ({}, {"y": ["x", "y", "f"]})]
+    )
+    def test_1d_row(self, long_df, facet_kws, pair_kws):
+
+        x = "z"
+        y = None if "y" in pair_kws else "z"
+        p = Plot(long_df, x=x, y=y).plot()
+        first, *other = p._subplots
+
+        ax = first["ax"]
+        assert ax.xaxis.get_label().get_visible()
+        assert ax.yaxis.get_label().get_visible()
+        assert all(t.get_visible() for t in ax.get_xticklabels())
+        assert all(t.get_visible() for t in ax.get_yticklabels())
+
+        for s in other:
+            ax = s["ax"]
+            assert not ax.xaxis.get_label().get_visible()
+            assert ax.yaxis.get_label().get_visible()
+            assert not any(t.get_visible() for t in ax.get_xticklabels())
+            assert all(t.get_visible() for t in ax.get_yticklabels())
+
+    def test_1d_column_wrapped(self, long_df):
+
+        ...
+
+    def test_1d_row_wrapped(self, long_df):
+
+        ...
+
+    def test_1d_column_wrapped_noncartesian(self, long_df):
+
+        ...
+
+    def test_2d(self, long_df):
+
+        ...
 
 
 # TODO Current untested includes:
