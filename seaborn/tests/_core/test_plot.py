@@ -1091,8 +1091,8 @@ class TestLabelVisibility:
 
         ax = first["ax"]
         assert ax.xaxis.get_label().get_visible()
-        assert ax.yaxis.get_label().get_visible()
         assert all(t.get_visible() for t in ax.get_xticklabels())
+        assert ax.yaxis.get_label().get_visible()
         assert all(t.get_visible() for t in ax.get_yticklabels())
 
         for s in other:
@@ -1102,21 +1102,117 @@ class TestLabelVisibility:
             assert not any(t.get_visible() for t in ax.get_xticklabels())
             assert all(t.get_visible() for t in ax.get_yticklabels())
 
-    def test_1d_column_wrapped(self, long_df):
+    def test_1d_column_wrapped(self):
 
-        ...
+        p = Plot().facet(col=["a", "b", "c", "d"], wrap=3).plot()
+        subplots = list(p._subplots)
 
-    def test_1d_row_wrapped(self, long_df):
+        for s in [subplots[0], subplots[-1]]:
+            ax = s["ax"]
+            assert ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_yticklabels())
 
-        ...
+        for s in subplots[1:]:
+            ax = s["ax"]
+            assert ax.xaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+
+        for s in subplots[1:-1]:
+            ax = s["ax"]
+            assert not ax.yaxis.get_label().get_visible()
+            assert not any(t.get_visible() for t in ax.get_yticklabels())
+
+        ax = subplots[0]["ax"]
+        assert not ax.xaxis.get_label().get_visible()
+        assert not any(t.get_visible() for t in ax.get_xticklabels())
+
+    def test_1d_row_wrapped(self):
+
+        p = Plot().facet(row=["a", "b", "c", "d"], wrap=3).plot()
+        subplots = list(p._subplots)
+
+        for s in subplots[:-1]:
+            ax = s["ax"]
+            assert ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_yticklabels())
+
+        for s in subplots[-2:]:
+            ax = s["ax"]
+            assert ax.xaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+
+        for s in subplots[:-2]:
+            ax = s["ax"]
+            assert not ax.xaxis.get_label().get_visible()
+            assert not any(t.get_visible() for t in ax.get_xticklabels())
+
+        ax = subplots[-1]["ax"]
+        assert not ax.yaxis.get_label().get_visible()
+        assert not any(t.get_visible() for t in ax.get_yticklabels())
 
     def test_1d_column_wrapped_noncartesian(self, long_df):
 
-        ...
+        p = (
+            Plot(long_df)
+            .pair(x=["a", "b", "c"], y=["x", "y", "z"], wrap=2, cartesian=False)
+            .plot()
+        )
+        for s in p._subplots:
+            ax = s["ax"]
+            assert ax.xaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+            assert ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_yticklabels())
 
-    def test_2d(self, long_df):
+    def test_2d(self):
 
-        ...
+        p = Plot().facet(col=["a", "b"], row=["x", "y"]).plot()
+        subplots = list(p._subplots)
+
+        for s in subplots[:2]:
+            ax = s["ax"]
+            assert not ax.xaxis.get_label().get_visible()
+            assert not any(t.get_visible() for t in ax.get_xticklabels())
+
+        for s in subplots[2:]:
+            ax = s["ax"]
+            assert ax.xaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+
+        for s in [subplots[0], subplots[2]]:
+            ax = s["ax"]
+            assert ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_yticklabels())
+
+        for s in [subplots[1], subplots[3]]:
+            ax = s["ax"]
+            assert not ax.yaxis.get_label().get_visible()
+            assert not any(t.get_visible() for t in ax.get_yticklabels())
+
+    def test_2d_unshared(self):
+
+        p = Plot().facet(col=["a", "b"], row=["x", "y"]).plot()
+        subplots = list(p._subplots)
+
+        for s in subplots[:2]:
+            ax = s["ax"]
+            assert not ax.xaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+
+        for s in subplots[2:]:
+            ax = s["ax"]
+            assert ax.xaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_xticklabels())
+
+        for s in [subplots[0], subplots[2]]:
+            ax = s["ax"]
+            assert ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_yticklabels())
+
+        for s in [subplots[1], subplots[3]]:
+            ax = s["ax"]
+            assert not ax.yaxis.get_label().get_visible()
+            assert all(t.get_visible() for t in ax.get_yticklabels())
 
 
 # TODO Current untested includes:
