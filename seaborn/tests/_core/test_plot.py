@@ -1191,7 +1191,12 @@ class TestLabelVisibility:
 
     def test_2d_unshared(self):
 
-        p = Plot().facet(col=["a", "b"], row=["x", "y"]).plot()
+        p = (
+            Plot()
+            .facet(col=["a", "b"], row=["x", "y"])
+            .configure(sharex=False, sharey=False)
+            .plot()
+        )
         subplots = list(p._subplots)
 
         for s in subplots[:2]:
