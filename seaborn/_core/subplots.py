@@ -14,7 +14,21 @@ if TYPE_CHECKING:
 
 
 class Subplots:
+    """
+    Interface for creating and using matplotlib subplots based on seaborn parameters.
 
+    Parameters
+    ----------
+    subplot_spec : dict
+        Keyword args for :meth:`matplotlib.figure.Figure.subplots`.
+    facet_spec : dict
+        Parameters that control subplot faceting.
+    pair_spec : dict
+        Parameters that control subplot pairing.
+    data : PlotData
+        Data used to define figure setup.
+
+    """
     def __init__(
         # TODO defined TypedDict types for these specs
         self,
@@ -60,7 +74,7 @@ class Subplots:
             raise RuntimeError(err)  # TODO what err class? Define PlotSpecError?
 
     def _determine_grid_dimensions(self, data: PlotData) -> None:
-
+        """Parse faceting and pairing information to define figure structure."""
         self.grid_dimensions = {}
         for dim, axis in zip(["col", "row"], ["x", "y"]):
 
@@ -81,7 +95,7 @@ class Subplots:
         self.n_subplots = self.subplot_spec["ncols"] * self.subplot_spec["nrows"]
 
     def _handle_wrapping(self) -> None:
-
+        """Update figure structure parameters based on facet/pair wrapping."""
         self.wrap = wrap = self.facet_spec.get("wrap") or self.pair_spec.get("wrap")
         if not wrap:
             return
@@ -98,14 +112,12 @@ class Subplots:
         self.wrap_dim = wrap_dim
 
     def _determine_axis_sharing(self) -> None:
-
+        """Update subplot spec with default or specified axis sharing parameters."""
         axis_to_dim = {"x": "col", "y": "row"}
         for axis in "xy":
             key = f"share{axis}"
-            if key in self.subplot_spec:
-                # Always use user-specified value, if present
-                val = self.subplot_spec[key]
-            else:
+            # Always use user-specified value, if present
+            if key not in self.subplot_spec:
                 if axis in self.pair_spec:
                     # Paired axes are shared along one dimension by default
                     if self.wrap in [None, 1] and self.pair_spec.get("cartesian", True):
@@ -116,11 +128,11 @@ class Subplots:
                     # This will pick up faceted plots, as well as single subplot
                     # figures, where the value doesn't really matter
                     val = True
-            self.subplot_spec[key] = val
+                self.subplot_spec[key] = val
 
-    def init_figure(self, pyplot: bool, figure_kws: dict | None = {}) -> Figure:
+    def init_figure(self, pyplot: bool, figure_kws: dict | None = None) -> Figure:
+        """Initialize matplotlib objects and add seaborn-relevant metadata."""
         # TODO other methods don't have defaults, maybe don't have one here either
-
         if figure_kws is None:
             figure_kws = {}
 
@@ -133,6 +145,7 @@ class Subplots:
         axs = figure.subplots(**self.subplot_spec, squeeze=False)
 
         if self.wrap:
+            # Remove unused Axes and flatten the rest into a (2D) vector
             axs_flat = axs.ravel({"col": "C", "row": "F"}[self.wrap_dim])
             axs, extra = np.split(axs_flat, [self.n_subplots])
             for ax in extra:
@@ -142,6 +155,9 @@ class Subplots:
             else:
                 axs = axs[:, np.newaxis]
 
+        # Get i, j coordinates for each Axes object
+        # Note that i, j are with respect to faceting/pairing,
+        # not the subplot grid itself, (which only matters in the case of wrapping).
         if not self.pair_spec.get("cartesian", True):
             indices = np.arange(self.n_subplots)
             iter_axs = zip(zip(indices, indices), axs.flat)
@@ -192,9 +208,9 @@ class Subplots:
         return figure
 
     def __iter__(self) -> Generator[dict, None, None]:  # TODO TypedDict?
-
+        """Yield each subplot dictionary with Axes object and metadata."""
         yield from self._subplot_list
 
     def __len__(self) -> int:
-
+        """Return the number of subplots in this figure."""
         return len(self._subplot_list)
