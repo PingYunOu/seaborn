@@ -628,8 +628,8 @@ class _DendrogramPlotter(object):
         from scipy.spatial.distance import pdist
         dist = pdist(self.array, metric=self.metric)
         exec(f'from scipy.cluster.hierarchy import {self.method}')
-        linkage = None
         lo = locals()
+        linkage = 'link'
         exec(linkage = f'{self.method}(dist)',{},lo)
         linkage=lo['linkage']
         # linkage = hierarchy.linkage(self.array, method=self.method, metric=self.metric)
