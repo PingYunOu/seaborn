@@ -632,7 +632,7 @@ class _DendrogramPlotter(object):
         lo = locals()
         dummy='link'
         print(dummy)
-        exec(f'from scipy.cluster.hierarchy import {self.method},{},lo')
+        exec(f'from scipy.cluster.hierarchy import {self.method}',{},lo)
         exec(f'dummy = {self.method}(dist)',{},lo)
         linkage=lo['dummy']
         #linkage = hierarchy.linkage(self.array, method=self.method, metric=self.metric)
