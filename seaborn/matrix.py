@@ -635,7 +635,7 @@ class _DendrogramPlotter(object):
         #exec(f'from scipy.cluster.hierarchy import {self.method},{},lo')
         #exec(f'dummy = {self.method}(dist)',{},lo)
         #dummy=lo['dummy']
-        # linkage = hierarchy.linkage(self.array, method=self.method, metric=self.metric)
+        linkage = hierarchy.linkage(self.array, method=self.method, metric=self.metric)
         return linkage
 
     def _calculate_linkage_fastcluster(self):
